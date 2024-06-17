@@ -1,11 +1,16 @@
 package ru.sgu.tariff.Controller;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import ru.sgu.tariff.Model.Clients;
 import ru.sgu.tariff.Service.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -25,25 +30,45 @@ public class ClientsController {
     }
 
     @GetMapping("/{id}")
-    public Clients getByClientId(@PathVariable Long id) {
+    public Clients getByClientId(@PathVariable Long id)
+            throws ClientService.ThereIsNoSuchClientException {
         return clientService.getByClientId(id);
     }
 
     @PostMapping
     public Clients create(@RequestBody Clients client) {
-        client.setLastModifiedDate(new Date());
         return clientService.create(client);
     }
 
     @PutMapping("/{id}")
-    public Clients update(@PathVariable Long id, @RequestBody Clients client) {
-        client = clientService.getByClientId(id);
-        client.setLastModifiedDate(new Date());
-        return clientService.update(client);
+    public Clients update(@PathVariable Long id, @RequestBody Clients client)
+            throws ClientService.ThereIsNoSuchClientException {
+         return clientService.update(id, client);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable Long id)
+            throws ClientService.ThereIsNoSuchClientException {
         clientService.delete(id);
+    }
+
+    @RestControllerAdvice
+    public static class ExceptionApiHandler extends ResponseEntityExceptionHandler {
+
+        @ExceptionHandler(ClientService.ThereIsNoSuchClientException.class)
+        public ResponseEntity<ErrorMessage> handlerThereIsNoSuchClientException() {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorMessage("There is no such client"));
+        }
+
+        @Data
+        @NoArgsConstructor
+        public static class ErrorMessage {
+            private String message;
+
+            public ErrorMessage(String message) {
+                this.message = message;
+            }
+        }
     }
 }
